@@ -76,10 +76,3 @@ INSERT INTO Ventas (ID_Cliente, ID_Producto, Fecha_Venta, Cantidad, Total) VALUE
 (5, 4, '2024-11-09', 10, 9.90);
 
 
-INSERT INTO Logs (Operacion, Tabla_Afectada, Fecha_Hora, Detalles) VALUES
-('INSERT', 'Cliente', '2024-11-10 10:15:30', 'Añadido nuevo cliente: Juan Pérez'),
-('UPDATE', 'Producto', '2024-11-09 15:42:10', 'Actualizado stock de producto: Bolígrafo azul'),
-('DELETE', 'Cliente', '2024-11-08 13:22:45', 'Eliminado cliente con ID: 3'),
-('INSERT', 'Ventas', '2024-11-07 18:05:00', 'Venta registrada para cliente ID: 4'),
-('UPDATE', 'Producto', '2024-11-06 17:30:20', 'Modificado precio de producto: Curso de Python');
-
