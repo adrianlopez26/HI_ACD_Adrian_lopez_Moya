@@ -11,7 +11,6 @@ public class Main {
         Connection conn = null;
 
         try {
-            // Obtener la conexión desde tu clase de conexión
             conn = DBConnection.getConnection();
 
             if (conn != null) {
@@ -19,14 +18,16 @@ public class Main {
 
                 boolean exit = false;
 
-                // Menú interactivo
                 while (!exit) {
                     System.out.println("\n--- Menú de operaciones ---");
                     System.out.println("1. Insertar cliente");
                     System.out.println("2. Insertar producto");
                     System.out.println("3. Registrar venta");
                     System.out.println("4. Ver logs");
-                    System.out.println("5. Salir");
+                    System.out.println("5. Ver Clientes");
+                    System.out.println("6. Ver Productos");
+                    System.out.println("7. Insertar detalle de venta");
+                    System.out.println("8. Salir");
 
                     System.out.print("Elige una opción: ");
                     int option = scanner.nextInt();
@@ -46,6 +47,15 @@ public class Main {
                             viewLogs(conn);
                             break;
                         case 5:
+                            viewClientes(conn);
+                            break;
+                        case 6:
+                            viewProductos(conn);
+                            break;
+                        case 7:
+                            insertDetalleVenta(conn, scanner);
+                            break;
+                        case 8:
                             System.out.println("Saliendo...");
                             exit = true;
                             break;
@@ -68,6 +78,87 @@ public class Main {
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    // Ver clientes
+    private static void viewClientes(Connection conn) throws SQLException {
+        String query = "SELECT * FROM Cliente";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            System.out.printf("%-10s %-20s %-20s %-30s %-15s %-30s\n", "ID", "Nombre", "Apellido", "Correo", "Teléfono", "Dirección");
+            System.out.println("-------------------------------------------------------------------------------------------------------------");
+            while (rs.next()) {
+                int idCliente = rs.getInt("ID_Cliente");
+                String nombre = rs.getString("Nombre");
+                String apellido = rs.getString("Apellido");
+                String correo = rs.getString("Correo");
+                String telefono = rs.getString("Telefono");
+                String direccion = rs.getString("Direccion");
+
+                System.out.printf("%-10d %-20s %-20s %-30s %-15s %-30s\n",
+                        idCliente, nombre, apellido, correo, telefono, direccion);
+            }
+        }
+    }
+
+    // Ver productos
+    private static void viewProductos(Connection conn) throws SQLException {
+        String query = "SELECT * FROM Producto";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            System.out.printf("%-10s %-30s %-50s %-10s %-20s\n", "ID", "Nombre", "Descripción", "Precio", "Cantidad en stock");
+            System.out.println("-------------------------------------------------------------------------------------------------------------");
+            while (rs.next()) {
+                int idProducto = rs.getInt("ID_Producto");
+                String nombre = rs.getString("Nombre");
+                String descripcion = rs.getString("Descripcion");
+                double precio = rs.getDouble("Precio");
+                int cantidadStock = rs.getInt("Cantidad_Stock");
+
+                System.out.printf("%-10d %-30s %-50s %-10.2f %-20d\n",
+                        idProducto, nombre, descripcion, precio, cantidadStock);
+            }
+        }
+    }
+
+    // Insertar detalle de venta
+    private static void insertDetalleVenta(Connection conn, Scanner scanner) throws SQLException {
+        System.out.print("Introduce el ID de la venta: ");
+        int idVenta = scanner.nextInt();
+        System.out.print("Introduce el ID del producto: ");
+        int idProducto = scanner.nextInt();
+        System.out.print("Introduce la cantidad de productos vendidos: ");
+        int cantidad = scanner.nextInt();
+        scanner.nextLine(); // Limpiar el buffer
+
+        // Obtener el precio del producto
+        String queryPrecio = "SELECT Precio FROM Producto WHERE ID_Producto = ?";
+        double precio = 0.0;
+        try (PreparedStatement stmtPrecio = conn.prepareStatement(queryPrecio)) {
+            stmtPrecio.setInt(1, idProducto);
+            try (ResultSet rs = stmtPrecio.executeQuery()) {
+                if (rs.next()) {
+                    precio = rs.getDouble("Precio");
+                } else {
+                    System.out.println("Producto no encontrado.");
+                    return;
+                }
+            }
+        }
+
+        // Calcular el precio total
+        double precioTotal = precio * cantidad;
+
+        // Insertar el detalle de venta
+        String queryDetalleVenta = "INSERT INTO Detalle_Venta (ID_Venta, ID_Producto, Cantidad, Precio_Total) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmtDetalleVenta = conn.prepareStatement(queryDetalleVenta)) {
+            stmtDetalleVenta.setInt(1, idVenta);
+            stmtDetalleVenta.setInt(2, idProducto);
+            stmtDetalleVenta.setInt(3, cantidad);
+            stmtDetalleVenta.setDouble(4, precioTotal);
+            stmtDetalleVenta.executeUpdate();
+            System.out.println("Detalle de venta registrado correctamente.");
         }
     }
 
@@ -129,18 +220,35 @@ public class Main {
         String fechaVenta = scanner.next();
         System.out.print("Introduce la cantidad de productos vendidos: ");
         int cantidad = scanner.nextInt();
-        System.out.print("Introduce el total de la venta: ");
-        double total = scanner.nextDouble();
         scanner.nextLine(); // Limpiar el buffer
 
-        String query = "INSERT INTO Ventas (ID_Cliente, ID_Producto, Fecha_Venta, Cantidad, Total) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, idCliente);
-            stmt.setInt(2, idProducto);
-            stmt.setString(3, fechaVenta);
-            stmt.setInt(4, cantidad);
-            stmt.setDouble(5, total);
-            stmt.executeUpdate();
+        // Obtener el precio del producto
+        String queryPrecio = "SELECT Precio FROM Producto WHERE ID_Producto = ?";
+        double precio = 0.0;
+        try (PreparedStatement stmtPrecio = conn.prepareStatement(queryPrecio)) {
+            stmtPrecio.setInt(1, idProducto);
+            try (ResultSet rs = stmtPrecio.executeQuery()) {
+                if (rs.next()) {
+                    precio = rs.getDouble("Precio");
+                } else {
+                    System.out.println("Producto no encontrado.");
+                    return;
+                }
+            }
+        }
+
+        // Calcular el total
+        double total = precio * cantidad;
+
+        // Insertar la venta
+        String queryVenta = "INSERT INTO Ventas (ID_Cliente, ID_Producto, Fecha_Venta, Cantidad, Total) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement stmtVenta = conn.prepareStatement(queryVenta)) {
+            stmtVenta.setInt(1, idCliente);
+            stmtVenta.setInt(2, idProducto);
+            stmtVenta.setString(3, fechaVenta);
+            stmtVenta.setInt(4, cantidad);
+            stmtVenta.setDouble(5, total);
+            stmtVenta.executeUpdate();
             System.out.println("Venta registrada correctamente.");
         }
     }
