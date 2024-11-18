@@ -24,16 +24,17 @@ public class Main {
 
                 while (!exit) {
                     System.out.println("\n--- Menú de operaciones ---");
-                    System.out.println("1. Insertar cliente");
-                    System.out.println("2. Insertar producto");
-                    System.out.println("3. Actualizar cliente");
-                    System.out.println("4. Actualizar producto");
-                    System.out.println("5. Eliminar cliente");
-                    System.out.println("6. Eliminar producto");
-                    System.out.println("7. Mostrar informe de clientes");
-                    System.out.println("8. Mostrar informe de productos");
-                    System.out.println("9. Mostrar detalles de ventas");
-                    System.out.println("10. Salir");
+                    System.out.println("1. Realizar venta");
+                    System.out.println("2. Insertar cliente");
+                    System.out.println("3. Insertar producto");
+                    System.out.println("4. Actualizar cliente");
+                    System.out.println("5. Actualizar producto");
+                    System.out.println("6. Eliminar cliente");
+                    System.out.println("7. Eliminar producto");
+                    System.out.println("8. Mostrar informe de clientes");
+                    System.out.println("9. Mostrar informe de productos");
+                    System.out.println("10. Mostrar detalles de ventas");
+                    System.out.println("11. Salir");
 
                     System.out.print("Elige una opción: ");
                     int option = scanner.nextInt();
@@ -41,33 +42,36 @@ public class Main {
 
                     switch (option) {
                         case 1:
-                            insertCliente(scanner, reportService);
+                            realizarVenta(scanner, reportService);
                             break;
                         case 2:
-                            insertProducto(scanner, reportService);
+                            insertCliente(scanner, reportService);
                             break;
                         case 3:
-                            updateCliente(scanner, reportService);
+                            insertProducto(scanner, reportService);
                             break;
                         case 4:
-                            updateProducto(scanner, reportService);
+                            updateCliente(scanner, reportService);
                             break;
                         case 5:
-                            deleteCliente(scanner, reportService);
+                            updateProducto(scanner, reportService);
                             break;
                         case 6:
-                            deleteProducto(scanner, reportService);
+                            deleteCliente(scanner, reportService);
                             break;
                         case 7:
-                            reportService.mostrarInformeClientes();
+                            deleteProducto(scanner, reportService);
                             break;
                         case 8:
-                            reportService.mostrarInformeProductos();
+                            reportService.mostrarInformeClientes();
                             break;
                         case 9:
-                            reportService.mostrarDetallesVentas();
+                            reportService.mostrarInformeProductos();
                             break;
                         case 10:
+                            reportService.mostrarDetallesVentas();
+                            break;
+                        case 11:
                             System.out.println("Saliendo...");
                             exit = true;
                             break;
@@ -91,6 +95,20 @@ public class Main {
                 e.printStackTrace();
             }
         }
+    }
+
+    private static void realizarVenta(Scanner scanner, ReportService reportService) {
+        reportService.mostrarProductosDisponibles();
+
+        System.out.print("Introduce el ID del cliente: ");
+        int idCliente = scanner.nextInt();
+        System.out.print("Introduce el ID del producto: ");
+        int idProducto = scanner.nextInt();
+        System.out.print("Introduce la cantidad: ");
+        int cantidad = scanner.nextInt();
+        scanner.nextLine(); // Limpiar el buffer
+
+        reportService.realizarVenta(idCliente, idProducto, cantidad);
     }
 
     private static void insertCliente(Scanner scanner, ReportService reportService) {
@@ -176,4 +194,5 @@ public class Main {
 
         reportService.eliminarProducto(id);
     }
+
 }

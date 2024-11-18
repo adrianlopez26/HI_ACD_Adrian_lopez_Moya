@@ -38,8 +38,6 @@ public class ProductoDAO {
         return productos;
     }
 
-    // Métodos para actualizar y eliminar productos
-
     public void actualizarProducto(Producto producto) throws SQLException {
         String sql = "UPDATE Producto SET Nombre = ?, Descripcion = ?, Precio = ?, Cantidad_Stock = ? WHERE ID_Producto = ?";
         try (Connection conn = DBConnection.getConnection();
@@ -60,5 +58,25 @@ public class ProductoDAO {
             pstmt.setInt(1, id);
             pstmt.executeUpdate();
         }
+    }
+
+    public Producto obtenerProductoPorId(int id) throws SQLException {
+        String sql = "SELECT * FROM Producto WHERE ID_Producto = ?";
+        Producto producto = null;
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    producto = new Producto();
+                    producto.setId(rs.getInt("ID_Producto"));
+                    producto.setNombre(rs.getString("Nombre"));
+                    producto.setDescripcion(rs.getString("Descripcion"));
+                    producto.setPrecio(rs.getDouble("Precio"));
+                    producto.setCantidadStock(rs.getInt("Cantidad_Stock"));
+                }
+            }
+        }
+        return producto;
     }
 }
