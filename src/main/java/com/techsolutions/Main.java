@@ -1,5 +1,8 @@
 package com.techsolutions;
 
+import com.techsolutions.service.ReportService;
+import com.techsolutions.model.Cliente;
+import com.techsolutions.model.Producto;
 import com.techsolutions.util.DBConnection;
 
 import java.sql.*;
@@ -9,6 +12,7 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         Connection conn = null;
+        ReportService reportService = new ReportService();
 
         try {
             conn = DBConnection.getConnection();
@@ -22,40 +26,48 @@ public class Main {
                     System.out.println("\n--- Menú de operaciones ---");
                     System.out.println("1. Insertar cliente");
                     System.out.println("2. Insertar producto");
-                    System.out.println("3. Registrar venta");
-                    System.out.println("4. Ver logs");
-                    System.out.println("5. Ver Clientes");
-                    System.out.println("6. Ver Productos");
-                    System.out.println("7. Insertar detalle de venta");
-                    System.out.println("8. Salir");
+                    System.out.println("3. Actualizar cliente");
+                    System.out.println("4. Actualizar producto");
+                    System.out.println("5. Eliminar cliente");
+                    System.out.println("6. Eliminar producto");
+                    System.out.println("7. Mostrar informe de clientes");
+                    System.out.println("8. Mostrar informe de productos");
+                    System.out.println("9. Mostrar detalles de ventas");
+                    System.out.println("10. Salir");
 
                     System.out.print("Elige una opción: ");
                     int option = scanner.nextInt();
-                    scanner.nextLine(); // Limpiar el buffer
+                    scanner.nextLine();
 
                     switch (option) {
                         case 1:
-                            insertCliente(conn, scanner);
+                            insertCliente(scanner, reportService);
                             break;
                         case 2:
-                            insertProducto(conn, scanner);
+                            insertProducto(scanner, reportService);
                             break;
                         case 3:
-                            insertVenta(conn, scanner);
+                            updateCliente(scanner, reportService);
                             break;
                         case 4:
-                            viewLogs(conn);
+                            updateProducto(scanner, reportService);
                             break;
                         case 5:
-                            viewClientes(conn);
+                            deleteCliente(scanner, reportService);
                             break;
                         case 6:
-                            viewProductos(conn);
+                            deleteProducto(scanner, reportService);
                             break;
                         case 7:
-                            insertDetalleVenta(conn, scanner);
+                            reportService.mostrarInformeClientes();
                             break;
                         case 8:
+                            reportService.mostrarInformeProductos();
+                            break;
+                        case 9:
+                            reportService.mostrarDetallesVentas();
+                            break;
+                        case 10:
                             System.out.println("Saliendo...");
                             exit = true;
                             break;
@@ -81,89 +93,7 @@ public class Main {
         }
     }
 
-    // Ver clientes
-    private static void viewClientes(Connection conn) throws SQLException {
-        String query = "SELECT * FROM Cliente";
-        try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-            System.out.printf("%-10s %-20s %-20s %-30s %-15s %-30s\n", "ID", "Nombre", "Apellido", "Correo", "Teléfono", "Dirección");
-            System.out.println("-------------------------------------------------------------------------------------------------------------");
-            while (rs.next()) {
-                int idCliente = rs.getInt("ID_Cliente");
-                String nombre = rs.getString("Nombre");
-                String apellido = rs.getString("Apellido");
-                String correo = rs.getString("Correo");
-                String telefono = rs.getString("Telefono");
-                String direccion = rs.getString("Direccion");
-
-                System.out.printf("%-10d %-20s %-20s %-30s %-15s %-30s\n",
-                        idCliente, nombre, apellido, correo, telefono, direccion);
-            }
-        }
-    }
-
-    // Ver productos
-    private static void viewProductos(Connection conn) throws SQLException {
-        String query = "SELECT * FROM Producto";
-        try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-            System.out.printf("%-10s %-30s %-50s %-10s %-20s\n", "ID", "Nombre", "Descripción", "Precio", "Cantidad en stock");
-            System.out.println("-------------------------------------------------------------------------------------------------------------");
-            while (rs.next()) {
-                int idProducto = rs.getInt("ID_Producto");
-                String nombre = rs.getString("Nombre");
-                String descripcion = rs.getString("Descripcion");
-                double precio = rs.getDouble("Precio");
-                int cantidadStock = rs.getInt("Cantidad_Stock");
-
-                System.out.printf("%-10d %-30s %-50s %-10.2f %-20d\n",
-                        idProducto, nombre, descripcion, precio, cantidadStock);
-            }
-        }
-    }
-
-    // Insertar detalle de venta
-    private static void insertDetalleVenta(Connection conn, Scanner scanner) throws SQLException {
-        System.out.print("Introduce el ID de la venta: ");
-        int idVenta = scanner.nextInt();
-        System.out.print("Introduce el ID del producto: ");
-        int idProducto = scanner.nextInt();
-        System.out.print("Introduce la cantidad de productos vendidos: ");
-        int cantidad = scanner.nextInt();
-        scanner.nextLine(); // Limpiar el buffer
-
-        // Obtener el precio del producto
-        String queryPrecio = "SELECT Precio FROM Producto WHERE ID_Producto = ?";
-        double precio = 0.0;
-        try (PreparedStatement stmtPrecio = conn.prepareStatement(queryPrecio)) {
-            stmtPrecio.setInt(1, idProducto);
-            try (ResultSet rs = stmtPrecio.executeQuery()) {
-                if (rs.next()) {
-                    precio = rs.getDouble("Precio");
-                } else {
-                    System.out.println("Producto no encontrado.");
-                    return;
-                }
-            }
-        }
-
-        // Calcular el precio total
-        double precioTotal = precio * cantidad;
-
-        // Insertar el detalle de venta
-        String queryDetalleVenta = "INSERT INTO Detalle_Venta (ID_Venta, ID_Producto, Cantidad, Precio_Total) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmtDetalleVenta = conn.prepareStatement(queryDetalleVenta)) {
-            stmtDetalleVenta.setInt(1, idVenta);
-            stmtDetalleVenta.setInt(2, idProducto);
-            stmtDetalleVenta.setInt(3, cantidad);
-            stmtDetalleVenta.setDouble(4, precioTotal);
-            stmtDetalleVenta.executeUpdate();
-            System.out.println("Detalle de venta registrado correctamente.");
-        }
-    }
-
-    // Insertar cliente
-    private static void insertCliente(Connection conn, Scanner scanner) throws SQLException {
+    private static void insertCliente(Scanner scanner, ReportService reportService) {
         System.out.print("Introduce el nombre del cliente: ");
         String nombre = scanner.nextLine();
         System.out.print("Introduce el apellido del cliente: ");
@@ -175,20 +105,11 @@ public class Main {
         System.out.print("Introduce la dirección del cliente: ");
         String direccion = scanner.nextLine();
 
-        String query = "INSERT INTO Cliente (Nombre, Apellido, Correo, Telefono, Direccion) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, nombre);
-            stmt.setString(2, apellido);
-            stmt.setString(3, correo);
-            stmt.setString(4, telefono);
-            stmt.setString(5, direccion);
-            stmt.executeUpdate();
-            System.out.println("Cliente insertado correctamente.");
-        }
+        Cliente cliente = new Cliente(0, nombre, apellido, correo, telefono, direccion);
+        reportService.agregarCliente(cliente);
     }
 
-    // Insertar producto
-    private static void insertProducto(Connection conn, Scanner scanner) throws SQLException {
+    private static void insertProducto(Scanner scanner, ReportService reportService) {
         System.out.print("Introduce el nombre del producto: ");
         String nombre = scanner.nextLine();
         System.out.print("Introduce la descripción del producto: ");
@@ -199,75 +120,60 @@ public class Main {
         int cantidadStock = scanner.nextInt();
         scanner.nextLine(); // Limpiar el buffer
 
-        String query = "INSERT INTO Producto (Nombre, Descripcion, Precio, Cantidad_Stock) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, nombre);
-            stmt.setString(2, descripcion);
-            stmt.setDouble(3, precio);
-            stmt.setInt(4, cantidadStock);
-            stmt.executeUpdate();
-            System.out.println("Producto insertado correctamente.");
-        }
+        Producto producto = new Producto(0, nombre, descripcion, precio, cantidadStock);
+        reportService.agregarProducto(producto);
     }
 
-    // Registrar venta
-    private static void insertVenta(Connection conn, Scanner scanner) throws SQLException {
-        System.out.print("Introduce el ID del cliente: ");
-        int idCliente = scanner.nextInt();
-        System.out.print("Introduce el ID del producto: ");
-        int idProducto = scanner.nextInt();
-        System.out.print("Introduce la fecha de la venta (yyyy-mm-dd): ");
-        String fechaVenta = scanner.next();
-        System.out.print("Introduce la cantidad de productos vendidos: ");
-        int cantidad = scanner.nextInt();
+    private static void updateCliente(Scanner scanner, ReportService reportService) {
+        System.out.print("Introduce el ID del cliente a actualizar: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // Limpiar el buffer
+        System.out.print("Introduce el nuevo nombre del cliente: ");
+        String nombre = scanner.nextLine();
+        System.out.print("Introduce el nuevo apellido del cliente: ");
+        String apellido = scanner.nextLine();
+        System.out.print("Introduce el nuevo correo del cliente: ");
+        String correo = scanner.nextLine();
+        System.out.print("Introduce el nuevo teléfono del cliente: ");
+        String telefono = scanner.nextLine();
+        System.out.print("Introduce la nueva dirección del cliente: ");
+        String direccion = scanner.nextLine();
+
+        Cliente cliente = new Cliente(id, nombre, apellido, correo, telefono, direccion);
+        reportService.actualizarCliente(cliente);
+    }
+
+    private static void updateProducto(Scanner scanner, ReportService reportService) {
+        System.out.print("Introduce el ID del producto a actualizar: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // Limpiar el buffer
+        System.out.print("Introduce el nuevo nombre del producto: ");
+        String nombre = scanner.nextLine();
+        System.out.print("Introduce la nueva descripción del producto: ");
+        String descripcion = scanner.nextLine();
+        System.out.print("Introduce el nuevo precio del producto: ");
+        double precio = scanner.nextDouble();
+        System.out.print("Introduce la nueva cantidad en stock: ");
+        int cantidadStock = scanner.nextInt();
         scanner.nextLine(); // Limpiar el buffer
 
-        // Obtener el precio del producto
-        String queryPrecio = "SELECT Precio FROM Producto WHERE ID_Producto = ?";
-        double precio = 0.0;
-        try (PreparedStatement stmtPrecio = conn.prepareStatement(queryPrecio)) {
-            stmtPrecio.setInt(1, idProducto);
-            try (ResultSet rs = stmtPrecio.executeQuery()) {
-                if (rs.next()) {
-                    precio = rs.getDouble("Precio");
-                } else {
-                    System.out.println("Producto no encontrado.");
-                    return;
-                }
-            }
-        }
-
-        // Calcular el total
-        double total = precio * cantidad;
-
-        // Insertar la venta
-        String queryVenta = "INSERT INTO Ventas (ID_Cliente, ID_Producto, Fecha_Venta, Cantidad, Total) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement stmtVenta = conn.prepareStatement(queryVenta)) {
-            stmtVenta.setInt(1, idCliente);
-            stmtVenta.setInt(2, idProducto);
-            stmtVenta.setString(3, fechaVenta);
-            stmtVenta.setInt(4, cantidad);
-            stmtVenta.setDouble(5, total);
-            stmtVenta.executeUpdate();
-            System.out.println("Venta registrada correctamente.");
-        }
+        Producto producto = new Producto(id, nombre, descripcion, precio, cantidadStock);
+        reportService.actualizarProducto(producto);
     }
 
-    // Ver los logs
-    private static void viewLogs(Connection conn) throws SQLException {
-        String query = "SELECT * FROM Logs";
-        try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-            while (rs.next()) {
-                int idLog = rs.getInt("ID_Log");
-                String operacion = rs.getString("Operacion");
-                String tablaAfectada = rs.getString("Tabla_Afectada");
-                String fechaHora = rs.getString("Fecha_Hora");
-                String detalles = rs.getString("Detalles");
+    private static void deleteCliente(Scanner scanner, ReportService reportService) {
+        System.out.print("Introduce el ID del cliente a eliminar: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // Limpiar el buffer
 
-                System.out.printf("ID: %d | Operación: %s | Tabla: %s | Fecha y Hora: %s | Detalles: %s\n",
-                        idLog, operacion, tablaAfectada, fechaHora, detalles);
-            }
-        }
+        reportService.eliminarCliente(id);
+    }
+
+    private static void deleteProducto(Scanner scanner, ReportService reportService) {
+        System.out.print("Introduce el ID del producto a eliminar: ");
+        int id = scanner.nextInt();
+        scanner.nextLine(); // Limpiar el buffer
+
+        reportService.eliminarProducto(id);
     }
 }

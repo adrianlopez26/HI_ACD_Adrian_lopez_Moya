@@ -1,5 +1,4 @@
 #Creacion BD
-
 create database bookworld;
 use bookworld;
 
